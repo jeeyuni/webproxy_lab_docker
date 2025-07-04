@@ -4,7 +4,7 @@
 int main (int argc, char **argv) 
 {
     int clientfd;    /* Initializing a buffer */
-    char host, *port, buf[MAXLINE]; 
+    char *host, *port, buf[MAXLINE]; 
     rio_t rio;
 
     if (argc != 3) {
