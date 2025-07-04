@@ -11,7 +11,7 @@ int main(int argc, char **argv)
     char client_hostname[MAXLINE], client_port[MAXLINE];
 
     listenfd = Open_listenfd(argv[1]);
-    while (1) {
+    while (1) { /* You gotta control c to quit this program */
         clientlen = sizeof(struct sockaddr_storage); /* Important! */
         /* info about the client : IP Address*/
         connfd = Accept(listenfd, (SA *)&clientaddr, &clientlen);
