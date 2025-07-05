@@ -21,6 +21,8 @@ int main(void)
     n2 = atoi(strchr(arg2, '=') + 1);
   }
 
+  /* Generating HTML contents and sending the conent back to the client
+  (content type & how many bytes is being sent back) */
   /* Make the response body */
   sprintf(content, "QUERY_STRING=%s\r\n<p>", buf);
   sprintf(content + strlen(content), "Welcome to add.com: ");
