@@ -137,6 +137,17 @@ void clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longms
   Rio_writen(fd, body, strlen(body));
 }
 
+void read_request(rio_t *rp) {
+  char buf [MAXLINE];
+
+  Rio_readlineb(rp, buf, MAXLINE);
+  while(strcmp(buf, "\r\n")) {
+    Rio_readlineb(rp, buf, MAXLINE);
+    prinf("%s", buf);
+  }
+  return;
+}
+
 int main(int argc, char **argv)
 {
   int listenfd, connfd;
