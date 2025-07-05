@@ -36,14 +36,20 @@ void serve_static(int fd, char *filename, int filesize) {
   sprintf(buf, "%sConnection: close\r\n", buf);
   sprintf(buf, "%sContent-length: %d\r\n", buf, filesize); //IMPORTANT
   sprintf(buf, "%sContent-type: %s\r\n\r\n", buf,filetype); //IMPORTANT
+  /* Sending back to the client */
   Rio_writen(fd, buf,strlen(buf));
 
-  /* Send response body to client */
+  /* Send response body to client. These can be done with regular read and writes*/
+  /* Get the file, open it up */
   srcfd = Open(filename, O_RDONLY, 0);
+  /* mmap you can avoid opening a file , passing a pointer directly to where the file is located (avoids one step of buffering)*/
   srcp = Mmap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0);
   Close(srcfd);
+  /*sending it off to the client */
   Rio_writen(fd, srcp, filesize);
   Munmap(srcp, filesize);
+
+  /* length here(idk where uhh   ) is the lengh of the file ( doesn't include the bytes in the header )*/
 }
 
 
