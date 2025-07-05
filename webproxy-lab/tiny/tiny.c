@@ -17,7 +17,10 @@ void serve_dynamic(int fd, char *filename, char *cgiargs);
 void clienterror(int fd, char *cause, char *errnum, char *shortmsg,
                  char *longmsg);
 
-/* Helper function of the code */
+/* 
+* serve_static serves static content to a client.
+*Helper function of the code 
+*/
 void serve_static(int fd, char *filename, int filesize)
 {
   int srcfd;
@@ -53,6 +56,9 @@ void serve_static(int fd, char *filename, int filesize)
   /* length here(idk where uhh   ) is the lengh of the file ( doesn't include the bytes in the header )*/
 }
 
+/*
+* serve_dynamic serves dynamic content to a client.
+*/
 void serve_dynamic(int fd, char *filename, char *cgiargs)
 {
   char buf[MAXLINE], *emptylist[] = {NULL};
@@ -73,6 +79,10 @@ void serve_dynamic(int fd, char *filename, char *cgiargs)
   Wait(NULL); /* Parent waits for and reaps child */
 }
 
+
+/*
+* doit handles one HTTP transaction
+*/
 void doit(int fd)
 {
   int is_static;
@@ -121,6 +131,9 @@ void doit(int fd)
   }
 }
 
+/*
+* clienterror sends an error message to the client
+*/
 void clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longmsg)
 {
   char buf[MAXLINE], body[MAXBUF];
@@ -145,6 +158,9 @@ void clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longms
   Rio_writen(fd, body, strlen(body));
 }
 
+/*
+* read_requesthdrs reads and ignores request headers 
+*/
 void read_request(rio_t *rp)
 {
   char buf[MAXLINE];
@@ -158,6 +174,9 @@ void read_request(rio_t *rp)
   return;
 }
 
+/*
+* Tiny parse_uri parses an HTTP URI.
+*/
 int parse_uri(char *uri, char *filename, char *cgiargs)
 {
   char *ptr;
