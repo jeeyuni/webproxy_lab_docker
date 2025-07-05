@@ -102,28 +102,36 @@ void doit(int fd)
     return;
   }
 
-  if (is_static) { /* Serve static content*/
-    if (!(S_ISREG(sbuf.st_mode)) || !(S_IRUSR & sbuf.st_mode)) {
+  if (is_static)
+  { /* Serve static content*/
+    if (!(S_ISREG(sbuf.st_mode)) || !(S_IRUSR & sbuf.st_mode))
+    {
       clienterror(fd, filename, "403", "Forbidden", "Tiny couldn't read the file");
       return;
     }
   }
-  else { /* Serve dynamic content */
-      if (!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode)) {
-          clienterror(fd, filename, "403", "Forbidden", "Tiny couldn't run the CGI program"); 
-          return;
-      }
-      serve_dynamic(fd, filename, cgiargs);
+  else
+  { /* Serve dynamic content */
+    if (!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode))
+    {
+      clienterror(fd, filename, "403", "Forbidden", "Tiny couldn't run the CGI program");
+      return;
+    }
+    serve_dynamic(fd, filename, cgiargs);
   }
 }
 
-void clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longmsg) {
+void clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longmsg)
+{
   char buf[MAXLINE], body[MAXBUF];
 
   /* Build the HTPP response body */
   sprintf(body, "<html><title>Tiny Error</title>");
-  sprintf(body, "%s<body bgcolor = ""ffffff"">\r\n", body);
-  sprintf(body, "%s%s: %s\r\n",body, errnum, shortmsg);
+  sprintf(body, "%s<body bgcolor = "
+                "ffffff"
+                ">\r\n",
+          body);
+  sprintf(body, "%s%s: %s\r\n", body, errnum, shortmsg);
   sprintf(body, "%s<p>%s: %s\r\n", body, longmsg, cause);
   sprintf(body, "%s<hr><em>The Tiny Web server</em>\r\n", body);
 
@@ -137,41 +145,74 @@ void clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longms
   Rio_writen(fd, body, strlen(body));
 }
 
-void read_request(rio_t *rp) {
-  char buf [MAXLINE];
+void read_request(rio_t *rp)
+{
+  char buf[MAXLINE];
 
   Rio_readlineb(rp, buf, MAXLINE);
-  while(strcmp(buf, "\r\n")) {
+  while (strcmp(buf, "\r\n"))
+  {
     Rio_readlineb(rp, buf, MAXLINE);
     prinf("%s", buf);
   }
   return;
 }
 
-int main(int argc, char **argv)
+int parse_uri(char *uri, char *filename, char *cgiargs)
 {
-  int listenfd, connfd;
-  char hostname[MAXLINE], port[MAXLINE];
-  socklen_t clientlen;
-  struct sockaddr_storage clientaddr;
+  char *ptr;
 
-  /* Check command line args */
-  if (argc != 2)
-  {
-    fprintf(stderr, "usage: %s <port>\n", argv[0]);
-    exit(1);
+  if (!strstr(uri, "cgi-bin"))
+  { /* Static content*/
+    strcpy(cgiargs, "");
+    strcpy(filename, ".");
+    strcat(filename, uri);
+    if (uri[strlen(uri) - 1] == '/')
+      strcat(filename, "home.html");
+    return 1;
   }
-
-  listenfd = Open_listenfd(argv[1]);
-  while (1)
-  {
-    clientlen = sizeof(clientaddr);
-    connfd = Accept(listenfd, (SA *)&clientaddr,
-                    &clientlen); // line:netp:tiny:accept
-    Getnameinfo((SA *)&clientaddr, clientlen, hostname, MAXLINE, port, MAXLINE,
-                0);
-    printf("Accepted connection from (%s, %s)\n", hostname, port);
-    doit(connfd);  // line:netp:tiny:doit
-    Close(connfd); // line:netp:tiny:close
+  else
+  { /* Dynamic content */
+    ptr = index(uri, '?');
+    if (ptr)
+    {
+      strcpy(cgiargs, ptr + 1);
+      *ptr = '\0';
+    }
+    else
+    {
+        strcpy(cgiargs, ""); // what is the indent for???????????????????????????
+      strcpy(filename, ".");
+      strcat(filename, uri);
+      return 0;
+    }
   }
 }
+
+  int main(int argc, char **argv)
+  {
+    int listenfd, connfd;
+    char hostname[MAXLINE], port[MAXLINE];
+    socklen_t clientlen;
+    struct sockaddr_storage clientaddr;
+
+    /* Check command line args */
+    if (argc != 2)
+    {
+      fprintf(stderr, "usage: %s <port>\n", argv[0]);
+      exit(1);
+    }
+
+    listenfd = Open_listenfd(argv[1]);
+    while (1)
+    {
+      clientlen = sizeof(clientaddr);
+      connfd = Accept(listenfd, (SA *)&clientaddr,
+                      &clientlen); // line:netp:tiny:accept
+      Getnameinfo((SA *)&clientaddr, clientlen, hostname, MAXLINE, port, MAXLINE,
+                  0);
+      printf("Accepted connection from (%s, %s)\n", hostname, port);
+      doit(connfd);  // line:netp:tiny:doit
+      Close(connfd); // line:netp:tiny:close
+    }
+  }
