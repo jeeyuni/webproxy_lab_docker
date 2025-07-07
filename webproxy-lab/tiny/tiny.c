@@ -196,13 +196,29 @@ void doit(int fd)
 }
 
 /*
-* clienterror sends an error message to the client
+* clienterror function sends an error message to the client when something goes wrong (file not found, permission denied .. etc)
+* HTML-formatted error page with appropriate HTTP status headers.
+* 
+*   fd: connected socket descriptor for the client to whom the error response should be sent
+*
+*   cause: A string explaning what caused the error(ex, the method "POST", the filename "/doesnotexist.htlm")
+*
+*   errnum: The HTTP error code as a string("404")
+*
+*   shortmsg: A short human-readable description of the error ("Not Found", "Forbidden")
+*
+*   longmsg: A longer descriptive message ("Tiny couldn't find the file")
+*
+*   buf[MAXLINE] : A buffer used to construct and send the HTTP response headers.
+*
+*   body[MAXBUF]: A buffer used to construct the HTML content for the error page body. 
+*
 */
 void clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longmsg)
 {
   char buf[MAXLINE], body[MAXBUF];
 
-  /* Build the HTPP response body */
+  /* 1. Generating the HTTP Reponse Body (HTML Error Page) */
   sprintf(body, "<html><title>Tiny Error</title>");
   sprintf(body, "%s<body bgcolor = "
                 "ffffff"
@@ -212,13 +228,15 @@ void clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longms
   sprintf(body, "%s<p>%s: %s\r\n", body, longmsg, cause);
   sprintf(body, "%s<hr><em>The Tiny Web server</em>\r\n", body);
 
-  /* Print the HTTP response*/
+  /* 2. Generating and Sending HTTP Response Headers */
   sprintf(buf, "HTTP/1.0 %s %s\r\n", errnum, shortmsg);
   Rio_writen(fd, buf, strlen(buf));
   sprintf(buf, "Content-type: text/htlm\r\n");
   Rio_writen(fd, buf, strlen(buf));
   sprintf(buf, "Content-length: %d\r\n\r\n", (int)strlen(body));
   Rio_writen(fd, buf, strlen(buf));
+  
+  /* 3. Sending the HTTP Response Body*/
   Rio_writen(fd, body, strlen(body));
 }
 
