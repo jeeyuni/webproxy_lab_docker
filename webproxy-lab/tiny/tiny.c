@@ -163,10 +163,22 @@ void doit(int fd)
     clienterror(fd, filename, "404", "Not found", "Tiny couldn't find this file");
     return;
   }
-
+/*
+*   3. Serve Content Based on Type - The server decides how to serve the content based on static/ dynamic
+*
+*   For static file, it checks if the path points to a regular file. if it's a directory or a special file, it's an error.
+*                    OR it checks if the user has read permission on the file. The server process needs to be able to read the file.
+*   
+*   For dynamic file, it checks for a regular file (again),
+*                    OR checks if the user has execute permission on the file. 
+*
+*   When all checks pass, the function is called to execute the CGI program. It sets up environment variables,
+*   forks a child process, redirects the child's standard output to the client socket then executes CGI program.
+*
+*/
   if (is_static)
   { /* Serve static content*/
-    if (!(S_ISREG(sbuf.st_mode)) || !(S_IRUSR & sbuf.st_mode))
+    if (!(S_ISREG(sbuf.st_mode)) || !(S_IRUSR & sbuf.st_mode)) 
     {
       clienterror(fd, filename, "403", "Forbidden", "Tiny couldn't read the file");
       return;
