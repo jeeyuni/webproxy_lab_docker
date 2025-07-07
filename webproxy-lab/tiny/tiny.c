@@ -30,7 +30,7 @@ void serve_static(int fd, char *filename, int filesize)
   receives a request with a particular file name from the uri
   it looks up OS call on how big the file is (how many bytes)
   given a file descriptor for the connection.
-  This function supports not just text but also GIFS JPEG and
+  This function supports not just text but also GIFS, JPEG and etc.
   */
   get_filetype(filename, filetype); // which type of file is it? (GIF, JPEG ... )
   /* formatting a header information */
@@ -81,7 +81,27 @@ void serve_dynamic(int fd, char *filename, char *cgiargs)
 
 
 /*
-* doit handles one HTTP transaction
+*  doit function handles one HTTP transaction (request and response).
+*
+*   fd: connected socket descriptor passed from main
+*
+*   is_static : integer flag that will be set to 1 if the requested content is static, and 0 if it's dynamic
+* 
+*   sbuf : A struct stat variable. The structure is used to store information about a file( ex size, permissions ..)
+*          obtained using stat() system call. 
+*
+*   buf: A general purpose buffer to read lines from the socket. 
+*
+*   method, uri, version : Buffers to store the components of the HTTP request line (ex "GET", "/index.html", "HTTP/1.0")
+*
+*   filename : A buffer to store the actual path to the file on the server's file system 
+*              that corresponds to the requested uri
+*
+*   cgiargs : A buffer to store any arguments passed to a CGI program
+*
+*   rio: A rio_t structure. This is a robust I/O buffer (from csapp.h) that allows for efficient reading of 
+*         text lines and binary data from the socket, handling short counts and partial reads
+*
 */
 void doit(int fd)
 {
@@ -91,12 +111,32 @@ void doit(int fd)
   char filename[MAXLINE], cgiargs[MAXLINE];
   rio_t rio;
 
-  /* Read request line and headers */
+  /*
+  *   1. Read Request Line and Headers 
+  *   
+  *   Rio_readinitb(&rio, fd) : Initializes the rio( robust I/O buffer). It associatesthe rio struct
+  *                             with the given file descriptor fd, preparing it for buffered reading.
+  * 
+  *   Rio_readineb(&rio, buf, MAXLINE): Reads the first line of the HTTP request from the client's socket into buf. 
+  *                                     The request line typically looks like GET /index.html HTTP/1.0
+  * 
+  *   sscanf() : parses the request line. 
+  *              - Extracts the HTTP method(ex "GET", "POST"), the uri("/index.html"), and the HTTP version("HTTP/1.0")
+  * 
+  */
   Rio_readinitb(&rio, fd);
   Rio_readlineb(&rio, buf, MAXLINE);
   printf("Request headers: \n");
   printf("%s", buf);
   sscanf(buf, "%s %s %s", method, uri, version);
+  /*
+  * 
+  *  Tiny Server is designed to only handle "GET" requests, so this if statement checks for the "GET".
+  * 
+  *  Then, read_requesthdrs gets called to read and discard the reamining HTTP request 
+  *  headers sent by the client. These headers contain additional information about the request. 
+  * 
+  */
   if (strcasecmp(method, "GET"))
   {
     clienterror(fd, method, "501", "Not implemented", "Tiny does not implement this method");
@@ -104,7 +144,19 @@ void doit(int fd)
   }
   read_requesthdrs(&rio);
 
-  /* Parse URI from GET request */
+  /*
+  *   2. Parse URI and Check File Existence
+  *   
+  *   is_static = parse_uri(uri, filename, cgiargs) : This crucial function determines whether the requested uri corresponds to a static file
+  *                                                   or a dynamic CGI program.
+  *                                                   - Ths function populates filename -> local file path, 
+  *                                                                             cgiargs -> cgi request, 
+  *                                                   - returns 1 if static, 0 if dynamic.
+  * 
+  *  if(stat(filename, &sbuf) < 0) : After determining the filename, the stat() system call is used to retrieve 
+  *  informatio about the file(or directory) and stores it in sbuf.                                                   
+  * 
+  */
   is_static = parse_uri(uri, filename, cgiargs);
   if (stat(filename, &sbuf) < 0)
   {
