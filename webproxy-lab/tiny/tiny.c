@@ -210,28 +210,117 @@ int parse_uri(char *uri, char *filename, char *cgiargs)
 
   int main(int argc, char **argv)
   {
+    /* 
+    *   listenfd : holds listening socket descriptor. This is the socket that 
+    *              the server uses to wait for incoming client connection requests.
+    * 
+    *   connfd : holds connected socket descriptor. Once a client connects, the server creates
+    *            the srver creates a new socket (connfd) specifically for communication with the client. 
+    * 
+    *   hostname, port : Character arrays ( buffers ) to store the client's hostname and port number, respectively.
+    *                    MAXLINE is a macro (in caspp.h) representing the max line length. 
+    * 
+    *   clientlen : A socketlen_t variable to store the size of the client's socket address structure.
+    * 
+    *   clientaddr : A struct sockaddr_storage variable. This is a generic socket address structure
+    *                that can hold different types of socket addresses (ex IPv4, IPv6) making the server
+    *                more flexible. 
+    */
     int listenfd, connfd;
     char hostname[MAXLINE], port[MAXLINE];
     socklen_t clientlen;
     struct sockaddr_storage clientaddr;
 
-    /* Check command line args */
+    /*
+    *   1. Command-Line Argument Check
+    *   
+    *   argc( argument count) : should be 2. one for the program name(argv[0]) and one for the port number(argv[1]).
+    *   
+    *   If the correct number of arguments isn't provided, error message is printed to stderr(standard error),
+    *   shows the correct usage, and the program exits with an error status (exit 1).
+    *   
+    *   The server requries a port number to know which port to listen on. 
+    * 
+    */
     if (argc != 2)
     {
       fprintf(stderr, "usage: %s <port>\n", argv[0]);
       exit(1);
     }
-
+    /*
+    *   2.Creating the Listening Socket
+    *
+    *   Open_listenfd(argv[1]) : is a wrapper function (in csapp.h) that simplifies the process of creating a listening socket.
+    *                            - It takes the port number (argv[1]) as an argument
+    *                            - Then, it creates a socket using socket(). Sets socket options, binds the socket,
+    *                              puts socket into listening state using listen(), if successful, returns the listenng socket descriptor
+    *                              (listenfd). if there's an error it handles it. 
+    * 
+    */
     listenfd = Open_listenfd(argv[1]);
+    /*
+    *    3. The Main Server Loop
+    *     
+    *     This creates an infinite loop. A Web server is designed to run continuously. 
+    *     It waits for and serves requests from multiple clients over time. It doesn't typically exit
+    *     unless explicitly stopped by an administrator or due to a critical error.
+    * 
+    */
     while (1)
     {
+      /*
+      *   4. Accepting Client Connections
+      *
+      *   clientlen : initialized wih the size of the clientaddr structure. This is required by accept() 
+      *               to know how much space it can fill. 
+      * 
+      *   Accept(listenfd, SA *)&clientaddr, &clientlen : another wrapper function. It blocks the server's execution
+      *                                                   until a client connects to the listenfd socket. 
+      * 
+      *   When a client connection arrives, Accept performs the accept() system call. 
+      *     - It creates a new connected socket descriptor(connfd) dedicated to this specific client communication.
+      *     - It fills the clientaddr structure with the client's network address information (IP address and port)
+      *     - It updates clientlen with the actual size of the filled address structure. 
+      * 
+      *   The listenfd reamins open and continues to listen for new connections, while connfd is used 
+      *   for the current client's interaction.
+      */    
       clientlen = sizeof(clientaddr);
+      
       connfd = Accept(listenfd, (SA *)&clientaddr,
                       &clientlen); // line:netp:tiny:accept
+      
+      /*
+      *   5. Logging Client Information
+      *   
+      *   Getnameinfo(...) : This function (or its wrapper Getnameinfo) is used to convert the binary network address
+      *                      in clientaddr into human-readable hostname and port strings.
+      * 
+      *   The server then prints a message to the console (printf) indicating that a connection has been accepted
+      *   and shows the client's hostname and port. This is useful for debugging and monitoring server activity.
+      */
       Getnameinfo((SA *)&clientaddr, clientlen, hostname, MAXLINE, port, MAXLINE,
                   0);
       printf("Accepted connection from (%s, %s)\n", hostname, port);
+
+      /*
+      *   6. Handling the Client Request
+      *   
+      *   doit(connfd): The core function that handles HTTP request from the connected client.
+      *                   - Inside doit, the server reads the HTTP request, parses the URI, determines if the request is for
+      *                     static or dynamic content. checks file permissions, and then serves the appropriate content (or error).
+      *                   - This function encapsulates all the logic for processing a single HTTP transactions.
+      *
+      */
       doit(connfd);  // line:netp:tiny:doit
+
+      /*
+      *   7. Closing the connection
+      *    
+      *   Close(conffd): after the doit funciton has finished processing the client's request and sending response,
+      *                  this wrapper function closes the connfd. This realeses the resources associated with 
+      *                  the specific client connection.
+      */
       Close(connfd); // line:netp:tiny:close
     }
   }
