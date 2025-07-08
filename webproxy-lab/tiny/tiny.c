@@ -200,6 +200,7 @@ void doit(int fd)
       clienterror(fd, filename, "403", "Forbidden", "Tiny couldn't read the file");
       return;
     }
+    serve_static(fd, filename, sbuf.st_size);
   }
   else
   { /* Serve dynamic content */
