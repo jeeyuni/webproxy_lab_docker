@@ -241,14 +241,20 @@ void clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longms
 }
 
 /*
-* read_requesthdrs reads and ignores request headers 
+* read_requesthdrs reads and discords ( or simply logs) the remaining HTTP request headers sent by the client
+* after the request line has been processed. The main purpose of this function is to consume all header lines
+* up to the crucial empty line. 
+*
+*   rp: pointer to an initialized rio_t structure, associated with the client's socket(fd).
+*
+*
 */
-void read_request(rio_t *rp)
+void read_requesthdrs(rio_t *rp)
 {
   char buf[MAXLINE];
 
-  Rio_readlineb(rp, buf, MAXLINE);
-  while (strcmp(buf, "\r\n"))
+  Rio_readlineb(rp, buf, MAXLINE); // 1. reads the first line (header)
+  while (strcmp(buf, "\r\n")) // 2. Loop to read remaining headers 
   {
     Rio_readlineb(rp, buf, MAXLINE);
     prinf("%s", buf);
