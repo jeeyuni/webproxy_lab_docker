@@ -36,7 +36,7 @@ void serve_static(int fd, char *filename, int filesize)
   /* formatting a header information */
   /*writes the header information out to the client */
   sprintf(buf, "HTTP/1.0 200 OK\r\n"); // every line has to finish with character return and a new line
-  sprintf(buf, "%sServer: Tiny Web Server\r\n"), buf;
+  sprintf(buf, "%sServer: Tiny Web Server\r\n", buf);
   sprintf(buf, "%sConnection: close\r\n", buf);
   sprintf(buf, "%sContent-length: %d\r\n", buf, filesize);   // IMPORTANT
   sprintf(buf, "%sContent-type: %s\r\n\r\n", buf, filetype); // IMPORTANT
@@ -60,14 +60,14 @@ void serve_static(int fd, char *filename, int filesize)
 * get_filetype - Derive file type from filename
 */
 void get_filetype(char *filename, char *filetype) {
-    if (strstr(filename, '.html'))
+    if (strstr(filename, ".html"))
       strcpy(filetype, "text/html");
-    else if (strstr(filetype, '.gif'))
+    else if (strstr(filename, ".gif"))
       strcpy(filetype, "image/gif");
-    else if (strstr(filename, '.png'))
-      strcpy(filetype, 'image/png');
-    else if (strstr(filename, '.jpg'))
-      strcpy(filetype, 'image/jpeg');
+    else if (strstr(filename, ".png"))
+      strcpy(filetype, "image/png");
+    else if (strstr(filename, ".jpg"))
+      strcpy(filetype, "image/jpeg");
     else
       strcpy(filetype, "text/plain");
 }
@@ -248,7 +248,7 @@ void clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longms
   /* 2. Generating and Sending HTTP Response Headers */
   sprintf(buf, "HTTP/1.0 %s %s\r\n", errnum, shortmsg);
   Rio_writen(fd, buf, strlen(buf));
-  sprintf(buf, "Content-type: text/htlm\r\n");
+  sprintf(buf, "Content-type: text/html\r\n");
   Rio_writen(fd, buf, strlen(buf));
   sprintf(buf, "Content-length: %d\r\n\r\n", (int)strlen(body));
   Rio_writen(fd, buf, strlen(buf));
@@ -315,13 +315,11 @@ int parse_uri(char *uri, char *filename, char *cgiargs)
       strcpy(cgiargs, ptr + 1);
       *ptr = '\0';
     }
-    else
-    {
-        strcpy(cgiargs, ""); // what is the indent for???????????????????????????
-      strcpy(filename, ".");
-      strcat(filename, uri);
-      return 0;
-    }
+    else strcpy(cgiargs, "");
+    strcpy(filename, ".");
+    strcat(filename, uri);
+    return 0;
+    
   }
 }
 
