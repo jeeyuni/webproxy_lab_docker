@@ -73,7 +73,7 @@ void serve_dynamic(int fd, char *filename, char *cgiargs)
   { /* Child */
     /* Real server would set all CGI vars here */
     setenv("QUERY_STRING", cgiargs, 1);   /* environment variable */
-    DUp2(fd, STDOUT_FILENO);              /* Redirect stdout to client */
+    Dup2(fd, STDOUT_FILENO);              /* Redirect stdout to client */
     Execve(filename, emptylist, environ); /* Run CGI program */
   }
   Wait(NULL); /* Parent waits for and reaps child */
@@ -257,13 +257,25 @@ void read_requesthdrs(rio_t *rp)
   while (strcmp(buf, "\r\n")) // 2. Loop to read remaining headers 
   {
     Rio_readlineb(rp, buf, MAXLINE);
-    prinf("%s", buf);
+    printf("%s", buf);
   }
   return;
 }
 
 /*
-* Tiny parse_uri parses an HTTP URI.
+* Tiny parse_uri takse a raw URI from the client's HTTP request (ex. /index.html) and determines
+*   1. Is it static or dynamic content request?
+*   2. And based on that, it constructs the filename ( the path to the resource on the server's file system)
+*      and extracts any cgiargs (arguments for dynamic content)
+*
+*    uri : A pointer to the input string containing the raw URI received from the client (ex /home.html)
+*
+*   filename: A pointer to a character array where the function will store he resolved local file path 
+*
+*   cgiargs : A pointer to a character array where the function will store any CGI arguments
+*
+*   ptr : A poitner that will be used to search for the "?" character in the URI
+*
 */
 int parse_uri(char *uri, char *filename, char *cgiargs)
 {
